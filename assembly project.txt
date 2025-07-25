@@ -1,0 +1,546 @@
+;you have written from 0 to 30 in the assignemnt so I am going to stick with it modifying it to for example (1-30) is easy 
+;I was having some trouble with the emulator so I put the project in this text file
+;never _____ never ____ ___ ___ ____
+
+.stack 200
+
+
+
+
+.data   
+;no explanation needed
+res dw 0 
+rand dw 0
+msg1 db "SUPER" 
+msg2 db "GOOD" 
+msg3 db "TRY HARDER NEXT TIME"
+msg4 db "time is:"
+msg5 db "press Enter to repeat" 
+msg6 db "target time is: "
+msg7 db "you pressed after:"
+msg8 db "the difference is:"
+
+;used to store current time vars
+curh db ?
+curm db ?
+curs db ?
+curms db ?     
+
+;storing the second and mili second difference to be printed
+secdif dw 0    
+mildif dw 0
+           
+;calcing the abs          
+delay dw 0
+delayms dw 0 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.code
+  mov ax,@data
+  mov ds,ax 
+  start:mov si,0
+
+call randy;this function generates random number I dare you to find a relation between grabage and time
+
+call p6
+
+mov ax,rand
+call printax 
+mov dl,'s' 
+call printchar
+
+mov ax,0
+
+ call newline
+       
+;taking the first space to start running 
+inp1:
+    mov ah,1
+    int 21h
+    cmp al,' '
+    jne inp1   
+       
+call gettime     ;ch:hours  cl:minutes  dh:seconds dl:miliseconds
+
+mov curh,ch
+mov curm,cl
+mov curs,dh
+mov curms,dl
+
+inp2:
+    mov ah,1
+    int 21h
+    cmp al,' '
+    jne inp2  
+    
+call gettime 
+           
+           
+           
+           
+
+sub ch,curh
+cmp ch,0
+jge good
+add ch,24
+good:          ;if the difference between hours before and after is negative we need to add 24 (the second call happend  in the next day)
+ mov curh,ch
+ sub cl,curm
+ mov curm,cl
+ sub dh,curs
+ mov curs,dh
+ sub dl,curms
+ mov curms,dl
+ call calcit ;calculate the second difference and stores it in secdif
+                   
+                   
+                   
+                   
+                   
+;print a new line and return carrige
+ call newline 
+ call p7
+;new line
+mov ax,secdif 
+
+call printax
+call printdot
+
+mov ax,mildif
+
+call printaxdc 
+mov dl,'s'
+call printchar
+call newline
+     
+     
+     
+     
+mov ax,secdif
+mov cx,rand   
+   ;finding the difference between required and wanted seconds
+cmp cx,ax
+jg ger
+ 
+  sub ax,cx
+  mov cx,ax 
+  mov dx,mildif
+ jmp le
+ger: 
+sub cx,ax 
+dec cx
+mov dx,mildif
+neg dx
+add dx,100
+
+
+
+
+le: 
+ mov delay,cx
+ mov delayms,dx
+ 
+
+
+
+call p8    
+;printing
+
+mov ax,delay
+
+call printax
+
+call printdot
+
+mov ax,delayms
+
+call printaxdc
+
+mov dl,'s'
+call printchar
+
+call newline
+
+;delay contains the seconds of delay 
+
+;delay ms containes the miliseconds of delay
+mov ax, delay
+mov cx,delayms
+ 
+;finding out if number is less than or equal to 2s
+cmp ax,2
+jg op2
+cmp ax,2
+
+jne ans1
+cmp cx,0
+jne op2
+ans1:call p1 
+
+ jmp en   
+               
+;finding out if number is between 2 and 5 or equal to 5
+op2:cmp ax,5
+jg  op3
+cmp ax,5
+jne ans2
+cmp cx,0
+jne op3
+ans2:call p2
+jmp en
+
+op3:call p3
+
+en:call newline
+
+call p5
+
+mov ah,1
+int 21h
+cmp al,0dh 
+pushf
+call newline
+popf 
+
+je start
+
+jmp doomandend
+
+
+
+ 
+ 
+;mov ah,4ch  ;to stop the program from running no matter what (for my conviniece)
+;int 21h 
+
+
+
+
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;.code end
+
+
+
+
+
+
+
+;new line procedure
+newline proc 
+    mov ah,2;
+mov dl,0ah   
+int 21h  
+mov ah,2
+mov dl,0dh
+int 21h
+    ret 
+endp
+
+
+
+
+
+;print dot procedure
+printdot proc 
+    mov dl,'.'
+    mov ah,2
+    int 21h
+    ret
+endp
+
+
+; the procedure that calculates the difference between two times of pressing space bar
+calcit proc  
+   ;calc the difference in hours 
+    mov cl,curh
+    mov ch,0
+    mov bx,3600
+    mov ax, 0
+    co:  
+     cmp cl,0 
+     je ohno  
+     add ax,bx
+     dec cl
+     jmp co
+    
+    ;clac the difference in minutes
+     
+    ohno:mov secdif,ax
+    mov al,curm 
+    mov ah,0                
+    mov cl,60 
+    imul cl  
+    add secdif,ax  
+    
+    ;  calc the diff in ceconds
+    
+    mov al,curs
+    mov cl,1
+    imul cl 
+    add secdif,ax
+     ;calc and fix diff in miliseconds
+    mov al,curms
+    mov ah,0
+    imul cl
+    cmp ax,0 
+    jge nosub
+     
+    mov dx,secdif
+    dec dx
+    mov secdif,dx
+    add ax,100
+    nosub:
+        mov mildif,ax
+        
+        
+    ret
+         
+endp
+
+
+
+ ;procedure that generates random number
+ 
+ 
+randy proc
+    
+    mov ah,2ch 
+    int 21h 
+    ;getting time
+    add dl,dh 
+    ;adding second to miliseconds and adding result to ax
+    mov cl,dl
+    mov dh,0  
+    mov ax,dx 
+    ;getting a random place in memory
+    mov si,ax
+    add ax,[si] 
+    mov dx,0
+    ;rotating al through carry for the sake of making tracing harder(no equation works to predict since we are rotating through you can't no what the result is going to be in addition we are only rotating half of the number so enjoy 
+    rcr al,cl  
+    
+    mov cx,31
+    div cx    
+    oo:  mov rand,dx
+    ret
+    
+endp
+
+
+
+
+
+;procedure that prints the number in ax   
+;push the digits to the stack then pop them and add 30h to print them in order
+
+
+printax proc   
+    mov dx,0   
+    mov bx,10 
+    mov cx,0
+    l1:
+      div bx
+      push dx  
+      mov dx,0
+      inc cx
+      cmp  ax,0
+      jne l1
+      
+    l2:
+      pop dx
+      or dl,00110000b
+      mov ah,2
+      int 21h
+      loop l2 
+
+    ret
+endp     
+
+
+
+
+
+;print message 1
+p1 proc
+    mov si,offset msg1
+    mov cx,5
+    lp1:
+     mov ah,2
+     mov dl,[si]
+     inc si
+     int 21h
+     loop lp1
+     
+     ret
+endp 
+    
+    
+    
+    
+;print message 2
+p2 proc
+    mov si,offset msg2
+    mov cx,4
+    lp2:
+     mov ah,2
+     mov dl,[si]
+     inc si
+     int 21h
+     loop lp2
+     ret
+endp
+     
+     
+     
+;print message 3
+p3 proc 
+    
+    mov si,0
+    mov cx,20
+    lp3:
+     mov ah,2
+     mov dl,msg3[si]
+     inc si
+     int 21h
+     loop lp3
+     ret
+endp 
+    
+
+
+;print message 4  
+    
+p4 proc
+    mov si,0
+    mov cx,8
+    lp4:
+    mov ah,2
+     mov dl,msg4[si]
+     inc si
+     int 21h
+     loop lp4
+     ret
+    
+
+
+
+;get the time procedure
+
+
+
+
+gettime proc
+    mov ah,2ch 
+    int 21h 
+    ret
+endp
+    
+    
+    
+;printing s procudure
+;was too lazy to keep writing these lines
+printchar proc
+    
+        mov ah,2
+    
+    int 21h
+    mov ah,2
+    mov dl,0ah
+    int 21h  
+    ret
+    
+endp     
+
+p6 proc  
+    
+    mov si,offset msg6
+    mov cx,15
+    pp6:
+      mov ah,2
+      mov dl,[si]
+      int 21h
+      inc si
+      loop pp6
+    ret
+endp
+
+;for numbers after the decimal point we need to print starting zeros
+printaxdc proc  
+    
+    cmp ax,10  
+    jge goal
+    mov dx,0
+    push ax
+    push dx
+    
+    mov cx,2
+    
+    badp:
+     mov ah,2
+     pop dx
+     add dx,'0'
+     int 21h
+     loop badp 
+       jmp oveee
+    
+      
+   goal:call printax    
+   
+   oveee: 
+    ret
+    
+endp
+
+ ;message 5 printing 
+ p5 proc  
+    
+    mov si,offset msg5
+    mov cx,21
+    pp5:
+      mov ah,2
+      mov dl,[si]
+      int 21h
+      inc si
+      loop pp5 
+      call newline
+    ret
+ endp 
+    
+    ;message 7 printing
+ p7 proc  
+    
+    mov si,offset msg7
+    mov cx,18
+    pp7:
+      mov ah,2
+      mov dl,[si]
+      int 21h
+      inc si
+      loop pp7 
+      call newline
+    ret
+ endp
+   
+   ;message 8 printing
+   
+ p8 proc  
+    
+    mov si,offset msg8
+    mov cx,18
+    pp8:
+      mov ah,2
+      mov dl,[si]
+      int 21h
+      inc si
+      loop pp8 
+      call newline
+    ret
+ endp
+
+
+doomandend:

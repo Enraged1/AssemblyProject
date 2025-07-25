@@ -1,0 +1,41 @@
+to get the ticks since midnight for the randomiser use 
+mov ah ,0
+int 1a
+
+
+
+mov ah,2ch 
+int 21h
+
+//dh containes seconds 
+//cl mintues
+
+approuch:
+
+ use this interruput take dh div 30 
+
+store this as your target time 
+
+get the space bar press using int 21h
+
+when you get it reuse the time interupt
+
+store in a variable  seconds(dh) + (cl)min*60+(var1)target time+ 84600*days(al) +3600*hour(ch)
+
+
+on press of the space bar
+
+reuse the time interupt 
+store in other variable the equation above 
+
+subtract the two values
+
+give the desired effect using jumps
+
+if enter is pressed repeat
+else terminate
+
+
+
+
+
